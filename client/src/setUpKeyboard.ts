@@ -1,8 +1,24 @@
-import keyboardSequence from './keyboardSequence';
-import audioManager from './audioManager';
+import keyboardSequence from "./keyboardSequence";
+import performanceManager from "./performanceManager";
 
-window.addEventListener('keydown', onKeyDown);
-window.addEventListener('keyup', onKeyUp);
+export default function setUpKeyboard() {
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+}
+
+type KeyHandler = (stepIndex: number, isKeyDown: boolean) => void;
+const keyHandlers: KeyHandler[] = []
+
+export function addKeyHandler(handler: KeyHandler) {
+  keyHandlers.push(handler);
+}
+
+export function invokeKeyHandler(stepIndex: number, isKeyDown: boolean) {
+  keyHandlers.forEach((handler) => {
+    handler(stepIndex, isKeyDown);
+  });
+}
+
 
 const keyPressState: { [code: string]: boolean } = {};
 
@@ -11,6 +27,9 @@ function isKeyPressed(code: string): boolean {
 }
 
 function onKeyDown(keyboardEvent: KeyboardEvent) {
+  if (!performanceManager.amIPerformer) {
+    return;
+  }
   console.log(keyboardEvent);
   const { code } = keyboardEvent;
 
@@ -28,7 +47,7 @@ function onKeyDown(keyboardEvent: KeyboardEvent) {
 
   keyPressState[code] = true;
 
-  audioManager.play(stepIndex);
+  invokeKeyHandler(stepIndex, true);
 }
 
 function onKeyUp(keyboardEvent: KeyboardEvent) {
@@ -44,11 +63,6 @@ function onKeyUp(keyboardEvent: KeyboardEvent) {
     return;
   }
   keyPressState[code] = false;
-  audioManager.stop(stepIndex);
-}
 
-async function startUp() {
-  await audioManager.initialize();
+  invokeKeyHandler(stepIndex, false);
 }
-
-startUp();

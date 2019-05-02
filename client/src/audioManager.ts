@@ -1,7 +1,5 @@
-const audioContext = new AudioContext();
-const globalGainNode = audioContext.createGain();
-globalGainNode.gain.value = 3.0;
-globalGainNode.connect(audioContext.destination);
+import { addKeyHandler } from "./setUpKeyboard";
+
 
 function convertBase64ToArrayBuffer(base64: string) {
   const binary_string =  window.atob(base64);
@@ -23,18 +21,24 @@ class AudioManager {
   private audios: Audio[]
   private lastBufferSources: { [stepIndex: number]: AudioBufferSourceNode } = {};
   private static releaseTime: number = 0.75;
+  private audioContext: AudioContext;
+  private globalGainNode: GainNode;
 
   async initialize() {
+    this.audioContext = new AudioContext();
+    this.globalGainNode = this.audioContext.createGain();
+    this.globalGainNode.gain.value = 3.0;
+    this.globalGainNode.connect(this.audioContext.destination);
     const response = await fetch('note.json');
     const notes: {[key: string]: string} = await response.json();
 
     this.audios = await Promise.all(Object.entries(notes)
       .map(async ([note, soundBase64]) => {
         const soundArrayBuffer = convertBase64ToArrayBuffer(soundBase64);
-        const audioBuffer = await audioContext.decodeAudioData(soundArrayBuffer);
+        const audioBuffer = await this.audioContext.decodeAudioData(soundArrayBuffer);
 
-        const gainNode = audioContext.createGain();
-        gainNode.connect(globalGainNode);
+        const gainNode = this.audioContext.createGain();
+        gainNode.connect(this.globalGainNode);
 
         return {
           note,
@@ -42,7 +46,14 @@ class AudioManager {
           gainNode,
         };
       }));
-    console.log(this.audios);
+
+    addKeyHandler((stepIndex: number, isKeyDown: boolean) => {
+      if (isKeyDown) {
+        this.play(stepIndex);
+      } else {
+        this.stop(stepIndex);
+      }
+    });
   }
 
   play(stepIndex: number) {
@@ -51,13 +62,12 @@ class AudioManager {
       return;
     }
 
-    const bufferSource = audioContext.createBufferSource();
+    const bufferSource = this.audioContext.createBufferSource();
     bufferSource.buffer = audio.audioBuffer;
     bufferSource.connect(audio.gainNode);
-    audio.gainNode.gain.cancelScheduledValues(audioContext.currentTime)
+    audio.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime)
     audio.gainNode.gain.value = 1.0;
 
-    console.log(`play ${stepIndex}, ${audio.note}`);
     bufferSource.start();
 
     this.lastBufferSources[stepIndex] = bufferSource;
@@ -71,12 +81,8 @@ class AudioManager {
       note,
       gainNode
     } = this.audios[stepIndex];
-    console.log(audioContext.currentTime, audioContext.currentTime + AudioManager.releaseTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + AudioManager.releaseTime);
-
-    console.log(`stop ${stepIndex}, ${note}`);
+    gainNode.gain.exponentialRampToValueAtTime(0.1, this.audioContext.currentTime + AudioManager.releaseTime);
   }
-
 }
 
 const audioManager = new AudioManager();

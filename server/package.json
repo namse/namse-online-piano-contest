@@ -1,0 +1,23 @@
+{
+  "name": "online-piano-contest-server",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "watch-build": "tsc -w",
+    "start": "node dist/index.js",
+    "watch-start": "nodemon dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/socket.io": "^2.1.2",
+    "nodemon": "^1.19.0",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "socket.io": "^2.2.0",
+    "uuid": "^3.3.2"
+  }
+}
