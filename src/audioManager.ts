@@ -1,7 +1,7 @@
 const audioContext = new AudioContext();
-const gainNode = audioContext.createGain();
-gainNode.gain.value = 3.0;
-gainNode.connect(audioContext.destination);
+const globalGainNode = audioContext.createGain();
+globalGainNode.gain.value = 3.0;
+globalGainNode.connect(audioContext.destination);
 
 function convertBase64ToArrayBuffer(base64: string) {
   const binary_string =  window.atob(base64);
@@ -16,11 +16,13 @@ function convertBase64ToArrayBuffer(base64: string) {
 type Audio = {
   note: string,
   audioBuffer: AudioBuffer,
+  gainNode: GainNode,
 }
 
 class AudioManager {
   private audios: Audio[]
   private lastBufferSources: { [stepIndex: number]: AudioBufferSourceNode } = {};
+  private static releaseTime: number = 0.75;
 
   async initialize() {
     const response = await fetch('note.json');
@@ -30,9 +32,14 @@ class AudioManager {
       .map(async ([note, soundBase64]) => {
         const soundArrayBuffer = convertBase64ToArrayBuffer(soundBase64);
         const audioBuffer = await audioContext.decodeAudioData(soundArrayBuffer);
+
+        const gainNode = audioContext.createGain();
+        gainNode.connect(globalGainNode);
+
         return {
           note,
           audioBuffer,
+          gainNode,
         };
       }));
     console.log(this.audios);
@@ -46,7 +53,9 @@ class AudioManager {
 
     const bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = audio.audioBuffer;
-    bufferSource.connect(gainNode);
+    bufferSource.connect(audio.gainNode);
+    audio.gainNode.gain.cancelScheduledValues(audioContext.currentTime)
+    audio.gainNode.gain.value = 1.0;
 
     console.log(`play ${stepIndex}, ${audio.note}`);
     bufferSource.start();
@@ -58,10 +67,14 @@ class AudioManager {
     if (!bufferSource) {
       return;
     }
-    const audio = this.audios[stepIndex];
-    console.log(`stop ${stepIndex}, ${audio.note}`);
+    const {
+      note,
+      gainNode
+    } = this.audios[stepIndex];
+    console.log(audioContext.currentTime, audioContext.currentTime + AudioManager.releaseTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + AudioManager.releaseTime);
 
-    bufferSource.stop();
+    console.log(`stop ${stepIndex}, ${note}`);
   }
 
 }

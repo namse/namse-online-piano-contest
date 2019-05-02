@@ -4,48 +4,46 @@ import audioManager from './audioManager';
 window.addEventListener('keydown', onKeyDown);
 window.addEventListener('keyup', onKeyUp);
 
-const keyPressState: { [key: string]: boolean } = {};
+const keyPressState: { [code: string]: boolean } = {};
 
-function isKeyPressed(key: string): boolean {
-  return !!keyPressState[key];
+function isKeyPressed(code: string): boolean {
+  return !!keyPressState[code];
 }
 
 function onKeyDown(keyboardEvent: KeyboardEvent) {
   console.log(keyboardEvent);
-  const { key } = keyboardEvent;
-  const lowercaseKey = key.toLowerCase();
+  const { code } = keyboardEvent;
 
-  const stepIndex = keyboardSequence.indexOf(lowercaseKey);
+  const stepIndex = keyboardSequence.indexOf(code);
   if (stepIndex < 0 ) {
     return;
   }
 
   keyboardEvent.preventDefault();
 
-  if (isKeyPressed(lowercaseKey))
+  if (isKeyPressed(code))
   {
     return;
   }
 
-  keyPressState[lowercaseKey] = true;
+  keyPressState[code] = true;
 
   audioManager.play(stepIndex);
 }
 
 function onKeyUp(keyboardEvent: KeyboardEvent) {
-  const { key } = keyboardEvent;
-  const lowercaseKey = key.toLowerCase();
-  const stepIndex = keyboardSequence.indexOf(lowercaseKey);
+  const { code } = keyboardEvent;
+  const stepIndex = keyboardSequence.indexOf(code);
 ;
   if (stepIndex < 0 ) {
     return;
   }
 
-  if (!isKeyPressed(lowercaseKey))
+  if (!isKeyPressed(code))
   {
     return;
   }
-  keyPressState[lowercaseKey] = false;
+  keyPressState[code] = false;
   audioManager.stop(stepIndex);
 }
 
