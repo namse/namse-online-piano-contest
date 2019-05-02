@@ -1,8 +1,19 @@
 import * as socketIo from 'socket.io';
 import User from './User';
+import * as express from 'express';
+import * as path from 'path';
+import * as http from 'http';
+
+const app = express();
+const httpServer = http.createServer(app);
+
+const distPath = path.resolve(__dirname, '../../client/dist'); 
+console.log(distPath);
+
+app.use(express.static(distPath));
 
 const port = 6974;
-const io = socketIo(port);
+const io = socketIo(httpServer);
 
 function broadcast(sockets: socketIo.Socket[], event: string | symbol, ...args: any[]): void
 {
@@ -98,3 +109,6 @@ io.on('connection', socket => {
     onEndPerformance(user);
   })
 });
+
+httpServer.listen(port, () => console.log(`listning on *:${port}`));
+

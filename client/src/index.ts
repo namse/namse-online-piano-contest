@@ -3,7 +3,7 @@ import setUpKeyboard from './setUpKeyboard';
 import networkManager from './networkManager';
 import performanceManager from './performanceManager';
 
-const serverUrl = 'http://localhost:6974';
+const serverUrl = '';
 
 async function startUp() {
   setUpKeyboard();
