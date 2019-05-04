@@ -7,7 +7,7 @@ import * as http from 'http';
 const app = express();
 const httpServer = http.createServer(app);
 
-const distPath = path.resolve(__dirname, '../../client/dist'); 
+const distPath = path.resolve(__dirname, '../../client/dist');
 console.log(distPath);
 
 app.use(express.static(distPath));
@@ -35,7 +35,7 @@ function onEndPerformance(user: User) {
   if (!isPerformer(user)) {
     return;
   }
-
+  turnOffSilentPerformerKickTimeout();
   performer = null;
 
   broadcastWithout(sockets, user.socket, 'endPerformance');
@@ -43,6 +43,24 @@ function onEndPerformance(user: User) {
 
 let sockets: socketIo.Socket[] = [];
 let users: User[] = [];
+let silentPerformerKickTimeout;
+
+function turnOffSilentPerformerKickTimeout() {
+  if (silentPerformerKickTimeout) {
+    clearTimeout(silentPerformerKickTimeout);
+  }
+}
+
+function onPerformerInteraction() {
+  turnOffSilentPerformerKickTimeout();
+  silentPerformerKickTimeout = setTimeout(() => {
+    console.log('kick!!!');
+    if (performer) {
+      performer.socket.disconnect();
+      onEndPerformance(performer);
+    }
+  }, 10000);
+}
 
 io.on('connection', socket => {
   let user: User;
@@ -77,7 +95,7 @@ io.on('connection', socket => {
     isAuthenticated = true;
 
     socket.emit('authenticated', user.id);
-  })
+  });
 
   socket.on('changeNoteState', (stepIndex, isPressed) => {
     if (!isAuthenticated || !isPerformer(user)) {
@@ -85,6 +103,7 @@ io.on('connection', socket => {
     }
     console.log(`[changeNoteState] ${user.name} ${stepIndex}, ${isPressed}`);
     broadcastWithout(sockets, socket, 'changeNoteState', stepIndex, isPressed);
+    onPerformerInteraction();
   });
 
   socket.on('raiseHand', () => {
@@ -94,7 +113,8 @@ io.on('connection', socket => {
 
     console.log(`[raiseHand] ${user.name}`);
     performer = user;
-    broadcast(sockets, 'newPerformer', user.id)
+    broadcast(sockets, 'newPerformer', user.id);
+    onPerformerInteraction();
   });
 
   // I need event name
