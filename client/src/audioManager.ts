@@ -27,7 +27,7 @@ class AudioManager {
   async initialize() {
     this.audioContext = new AudioContext();
     this.globalGainNode = this.audioContext.createGain();
-    this.globalGainNode.gain.value = 1.0;
+    this.globalGainNode.gain.value = 3.0;
     this.globalGainNode.connect(this.audioContext.destination);
     const response = await fetch('public/note.json');
     const notes: {[key: string]: string} = await response.json();
